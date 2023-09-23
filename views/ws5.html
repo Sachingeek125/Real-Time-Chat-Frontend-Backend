@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WebSocket Chat</title>
+
+</head>
+<style>
+/* Updated chat window styles */
+.chat-window {
+  background-color: #fff; /* White background */
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 500px;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  height: calc(100% - 40px); /* Adjusted for padding */
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  z-index: 999;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  color: #000; /* Black text color for the chat window */
+}
+
+/* Show the chat window when it's active */
+.chat-window.active {
+  transform: translateX(0);
+}
+
+/* Style the chat window header */
+.chat-window h1 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #000; /* Black text color */
+  margin-bottom: 20px;
+}
+
+/* Style the chat output area */
+.chat-output {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  background-color: #f0f0f0; /* Light gray background */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Style individual chat messages */
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+/* Style the message container */
+.message-container {
+  background-color: #f0f0f0; /* Light gray background */
+  color: #000; /* Black text color */
+  border-radius: 10px;
+  padding: 10px;
+  max-width: 70%;
+  word-wrap: break-word;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Style sender's messages */
+.chat-message.sent .message-container {
+  background-color: #fffc00; /* Snapchat yellow background for sent messages */
+  margin-left: auto;
+}
+
+/* Style receiver's messages */
+.chat-message.received .message-container {
+  background-color: #fff; /* White background for received messages */
+  margin-right: auto;
+}
+
+/* Style the user list container on the left */
+.user-list-container {
+  background-color: #fff; /* White background */
+  border-radius: 10px;
+  padding: 10px;
+  max-width: 250px;
+  margin-right: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  color: #000; /* Black text color for user list */
+}
+
+/* Style the user list header */
+.user-list-container p {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #000; /* Black text color */
+}
+
+/* Style the user list items */
+.user-list-container ul {
+  list-style: none;
+  padding-left: 0;
+  flex-grow: 1;
+}
+
+.user-list-container li {
+  padding: 10px;
+  background-color: #f0f0f0; /* Light gray background */
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  border: 1px solid #d3d3d3; /* Light gray border */
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Hover effect on user list items */
+.user-list-container li:hover {
+  background-color: #e0e0e0; /* Slightly darker gray background on hover */
+  transform: scale(1.02);
+}
+
+/* Style the popup container */
+.popup {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* Style the popup content */
+.popup-content {
+  background-color: #fff; /* White background */
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  width: 80%;
+  max-width: 400px;
+  position: relative;
+}
+
+/* Style the close button */
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* Style the form and inputs */
+#group-form {
+  text-align: center;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.user-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+/* Style the Create button */
+button[type="submit"] {
+  background-color: #fffc00; /* Snapchat yellow background */
+  color: #000; /* Black text color */
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Hover effect on the Create button */
+button[type="submit"]:hover {
+  background-color: #ffea00; /* Lighter yellow background on hover */
+}
+
+
+/* Add styles for the search bar */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: #000; /* Black background */
+  border-radius: 10px;
+  padding: 6px 10px; /* Adjust padding for height */
+  max-width: 250px; /* Same width as user list container */
+  margin-right: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: #fff; /* White text color for search bar */
+  height: 36px; /* Adjust the height */
+}
+
+/* Style the search icon */
+.search-bar i {
+  padding-right: 10px; /* Add some spacing between icon and input */
+  color: #fff; /* White color for the icon */
+}
+
+/* Style the search input */
+.search-bar input[type="text"] {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  background: transparent; /* Remove input background */
+  color: #fff; /* White text color for the input */
+  line-height: 1; /* Adjust line height to center vertically */
+}
+
+/* Style the placeholder text */
+.search-bar input[type="text"]::placeholder {
+  color: #fff; /* White placeholder text color */
+}
+/* Style the Create Group button */
+#create-group-button {
+  background-color: #25d366; /* WhatsApp green background color */
+  color: #fff; /* White text color */
+  border: none;
+  padding: 12px 20px;
+  border-radius: 25px; /* Increase border-radius for a rounder button */
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  position: absolute; /* Position it absolutely */
+  top: 20px; /* Adjust the top value for spacing from the top of the page */
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Center horizontally */
+}
+
+/* Hover effect on the Create Group button */
+#create-group-button:hover {
+  background-color: #128C7E; /* Slightly darker green background on hover */
+}
+
+
+#create-group-button::before {
+  content: "\f067";
+  font-family: FontAwesome; 
+  margin-right: 10px; 
+}
+
+
+
+
+</style>
+
+
+
+  <body>
+     <!-- Button for group creation -->
+      <button id="create-group-button">Create Group</button>
+  <!-- search bar for user list -->
+  <div class="search-bar">
+    <i class="fa fa-search"></i>
+    <input type="text" id="user-list-search" placeholder="Search users...">
+  </div>
+  
+   <!-- Chat Container for the userlist and grouplist-->
+  <div class="chat-container">
+  <div class="user-list-container">
+  <p>User List:</p>
+  <ul>
+  {{range $user := .users}}
+  <li>
+  <label>
+     <!-- populating all users into userlist with user himself checked option disabled -->
+  <input type="checkbox" name="participants" value="{{$user}}"{{if eq $user $.name}} disabled{{end}}> {{$user}}
+  </label>
+  </li>
+  {{end}}
+  <li>
+  <label>
+  <input type="checkbox" name="participants" value="Broadcast"> Broadcast
+  </label>
+  </li>
+  </ul>
+  <div class="group-list-container">
+    <p>Group List:</p>
+    <ul id="group-list">
+   
+      <!-- Group list items will be added here dynamically -->
+    </ul>
+  </div>
+  
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  
+  
+   <!-- For popup which opens when create button is clicked -->
+  <div id="group-popup" class="popup">
+      <div class="popup-content">
+        <span class="close" id="close-popup">&times;</span>
+        <h2><center>Create Group</center></h2>
+        <form id="group-form">
+          <label for="group-name">Enter Your Group Name:</label>
+          <input type="text" id="group-name" name="group-name" autocomplete="off" placeholder="Enter Your Group Name..." required>
+          <h3>Add Users:</h3>
+          <input type="text" id="add-users-search"  autocomplete="off" placeholder="Search users...">
+          <div class="user-list">
+            <!-- List of users with checkboxes -->
+            <!-- Include the current user with a disabled checkbox -->
+            {{range $user := .users}}
+            <label>
+              <input type="checkbox" name="group-members" value="{{$user}}"{{if eq $user $.name}} checked disabled{{end}}> {{$user}}
+            </label>
+            {{end}}
+          </div>
+          
+          <button type="submit">Create</button>
+        </form>
+      </div>
+    </div>
+    
+  
+   <!-- Add the chatwindow when user wants to chat with specific user with send button for sending the messages -->
+  <div class="chat-window" id="chat-window">
+  <h1>Chat with <span id="chat-recipient"></span></h1>
+  <div class="chat-output" id="chat-output-window"></div>
+  <input type="text" id="message-input-window" placeholder="Type a message...">
+  <button id="send-button-window">Send</button>
+  </div>
+  
+  
+  
+  <!-- Add this hidden input field to store the current chat recipient -->
+  <input type="hidden" id="current-recipient" value="">
+  </div>
+  
+  </div>
+  </body>
+  <script>
+  // Establish a WebSocket connection to ws://localhost
+  const socket = new WebSocket('ws://localhost:3000/ws?name={{.name}}');
+
+  
+  
+// Function to handle user and group list search
+function handleUserAndGroupListSearch() {
+  const searchInput = document.getElementById('user-list-search');
+  const userList = document.querySelectorAll('.user-list-container ul li');
+  const groupListContainer = document.querySelector('.group-list-container ul');
+
+  // Create elements for "No users found" and "No groups found" messages
+  const noUsersFoundMessage = document.createElement('li');
+  noUsersFoundMessage.textContent = 'No users found';
+  noUsersFoundMessage.style.display = 'none';
+  const noGroupsFoundMessage = document.createElement('li');
+  noGroupsFoundMessage.textContent = 'No groups found';
+  noGroupsFoundMessage.style.display = 'none';
+
+  // Append the messages to the respective lists
+  userList[0].parentNode.appendChild(noUsersFoundMessage);
+  groupListContainer.appendChild(noGroupsFoundMessage);
+
+  searchInput.addEventListener('input', () => {
+    const searchTerm = searchInput.value.toLowerCase();
+    let usersFound = false;
+    let groupsFound = false;
+
+    // Search and display user names if matches according to input
+    userList.forEach((userListItem) => {
+      const userName = userListItem.textContent.toLowerCase();
+      if (userName.includes(searchTerm)) {
+        userListItem.style.display = 'block';
+        usersFound = true;
+      } else {
+        userListItem.style.display = 'none';
+      }
+    });
+
+    // Search and display group names (including dynamically added ones)
+    const groupListItems = groupListContainer.querySelectorAll('li');
+    groupListItems.forEach((groupListItem) => {
+      const groupName = groupListItem.textContent.toLowerCase();
+      if (groupName.includes(searchTerm)) {
+        groupListItem.style.display = 'block';
+        groupsFound = true;
+      } else {
+        groupListItem.style.display = 'none';
+      }
+    });
+
+    // Show/hide "No users found" and "No groups found" messages
+    noUsersFoundMessage.style.display = usersFound ? 'none' : 'block';
+    noGroupsFoundMessage.style.display = groupsFound ? 'none' : 'block';
+  });
+}
+
+// Call the function when the page is loaded for searching user and groups list
+document.addEventListener('DOMContentLoaded', handleUserAndGroupListSearch);
+  
+  // Call the handleUserListSearch function to enable user list search
+  handleUserAndGroupListSearch();
+  
+
+
+
+  // Function to handle user search in the add users section of group creation popup
+  function handleAddUsersSearch() {
+    const searchInput = document.getElementById('add-users-search');
+    const userCheckboxes = document.querySelectorAll('input[name="group-members"]');
+  
+    searchInput.addEventListener('input', () => {
+      const searchTerm = searchInput.value.toLowerCase();
+  
+      userCheckboxes.forEach((checkbox) => {
+        const userName = checkbox.value.toLowerCase();
+        const label = checkbox.parentElement;
+        
+        if (userName.includes(searchTerm)) {
+          label.style.display = 'block';
+        } else {
+          label.style.display = 'none';
+        }
+      });
+    });
+  }
+  
+  
+// Call the handleAddUsersSearch function to enable user search in the group creation popup
+handleAddUsersSearch();
+
+// call the fetchExistingGroupNames function to fetch all the groupnames from server-side
+fetchExistingGroupNames();
+
+// Function to asynchronously fetch the list of existing group names from a server-side API
+async function fetchExistingGroupNames() {
+  try {
+    // Send a GET request to the '/get-groups' endpoint
+    const response = await fetch('/get-groups');
+    
+    // Log the response for debugging purposes
+    console.log("Response");
+    console.log(response);
+    
+    // Check if the response is successful
+    if (response.ok) {
+      // Parse the response body as JSON
+      const data = await response.json();
+      
+      // Log the retrieved group names from the API
+      console.log("Data");
+      console.log(data.groups);
+      
+      // Return the list of group names from the API response
+      return data.groups;
+    } else {
+      // Throw an error if the response status is not in the success range
+      throw new Error('Failed to fetch group names from the API');
+    }
+  } catch (error) {
+    // Handle any errors that occur during the fetch operation
+    console.error(error);
+    
+    // Return an empty array in case of an error to indicate no group names were retrieved
+    return [];
+  }
+}
+
+
+
+  
+// Function to extract sender name and message content from a message string
+function extractSenderAndMessage(message) {
+  if (typeof message !== 'string') {
+    // Handle cases where message is not a string (e.g., non-string messages from the server)
+    console.log("In Extract not");
+    console.log(message);
+    return { senderName: 'Server', messageContent: message.toString() };
+  }
+
+  const matches = message.match(/^\[([^\]]+)\]\s*(.*)$/);
+  if (matches && matches.length >= 3) {
+    const senderName = matches[1];
+    const messageContent = matches[2].trim();
+    return { senderName, messageContent };
+  } else {
+    console.log("In else");
+    console.log(message);
+
+    // Handle cases where the message format is not as expected
+    return { senderName: 'Server', messageContent: message };
+  }
+}
+  // Get the button and popup elements
+  const createGroupButton = document.getElementById('create-group-button');
+  const groupPopup = document.getElementById('group-popup');
+  const closePopupButton = document.getElementById('close-popup');
+  const groupForm = document.getElementById('group-form');
+  
+  // Event listener for creategroup button
+  createGroupButton.addEventListener('click', () => {
+    // Close the chat window first(if opened)
+    closeChatWindow();
+    
+    // reset the groupform fields
+    groupForm.reset();
+    // Show the create group popup
+    groupPopup.style.display = 'block';
+  });
+  
+  
+  // Event listener for the "Close" button in the popup
+  closePopupButton.addEventListener('click', () => {
+    groupPopup.style.display = 'none';
+  });
+  
+ // Event listener to close the popup when clicking outside of it
+  window.addEventListener('click', (event) => {
+    if (event.target === groupPopup) {
+      groupPopup.style.display = 'none';
+    }
+  });
+  
+
+
+
+
+// Handle form submission (create group)
+groupForm.addEventListener('submit', async (event) => {
+  event.preventDefault();  // Prevent the default form submission behavior
+
+  // Get selected users and group name
+  const selectedUsers = Array.from(document.querySelectorAll('input[name="group-members"]:checked'))
+    .map((checkbox) => checkbox.value);
+  const groupName = document.getElementById('group-name').value;
+  console.log(groupName);
+
+  // Fetch the list of existing group names from the API
+  const existingGroupNames = await fetchExistingGroupNames();
+  console.log(existingGroupNames);
+
+  // Check if the entered group name is a duplicate
+  if (existingGroupNames.includes(groupName)) {
+    alert(`Group "${groupName}" already exists.`);
+    return; // Don't proceed further if duplicate group entered
+  }
+
+  // Create the group(if user has selected any participant for creating a group and has entered a non empty value for groupname)
+  if (selectedUsers.length > 1 && groupName.trim() !== '') {
+    // Display an alert or take the necessary action to create the group
+    alert(`Group "${groupName}" created with members: ${selectedUsers.join(', ')}`);
+
+    // Join the selectedUsers array into a string
+    const selectedUsersString = selectedUsers.join(',');
+
+    // Send a message to indicate group creation to the server side
+    const isGroup = true;
+    const formattedMessage = `selectedUsers:${selectedUsersString};${groupName};${isGroup}`;
+    socket.send(formattedMessage); // Send the formatted message to the server
+
+    // Close the popup
+    groupPopup.style.display = 'none';
+
+    // Append the group to the selected users
+    addGroupToUserList(groupName, selectedUsers);
+  } else {
+    alert('Please select users and provide a group name.');
+  }
+});
+
+
+  
+  
+  
+// Function to dynamically add a group to the user list
+function addGroupToUserList(groupName) {
+  const userListContainer = document.querySelector('.user-list-container ul'); // Get the user list container element
+  const listItem = document.createElement('li'); // Create a new list item element
+  const label = document.createElement('label'); // Create a label element
+  const input = document.createElement('input'); // Create an input element
+
+  input.type = 'checkbox'; // Set the input type to 'checkbox'
+  input.name = 'participants'; // Set the input name attribute to 'participants'
+  input.value = 'Group:' + groupName; // Set the input value to 'Group:' followed by groupName
+
+  label.appendChild(input); // Append the input element to the label
+  label.appendChild(document.createTextNode(` ${groupName}`)); // Append text content with 'Group:' and the groupName to the label
+  listItem.appendChild(label); // Append the label to the list item
+  userListContainer.appendChild(listItem); // Append the list item to the user list container
+}
+
+  
+  
+// This function loads previous messages for a specific group and displays them in ascending order of time
+async function loadAndDisplayGroupMessages(groupname) {
+  // Clear the existing chat messages
+  chatOutput.innerHTML = '';
+
+  // Get the current user's name
+  const currentUser = "{{.name}}";
+
+  // Fetch messages for the specified group from the server
+  const response = await fetch(`/load-group-messages?group=${groupname}`);
+  console.log("Loading and displaying group messages...");
+  console.log(response);
+
+  if (response.ok) {
+    // Parse the JSON response body to obtain message data
+    const responseBody = await response.json();
+
+    // Filter out server-generated messages and sort messages by sent time in ascending order
+    const userMessages = responseBody.filter(message => message.sender !== 'Server');
+    const sortedMessages = userMessages.sort((a, b) => new Date(a.sent_time) - new Date(b.sent_time));
+
+    // Iterate through each sorted message and display them
+    for (const message of sortedMessages) {
+      // Extract sender and message content from each message
+      const { sender, message_content } = message;
+
+      // Create a message div element
+      const messageDiv = document.createElement('div');
+
+      // Determine if the message was sent by the current user or another user
+      if (sender === currentUser) {
+        // Format the message as "You: message_content" for the sender
+        messageDiv.className = 'sent-message';
+        messageDiv.innerHTML = `<p><strong>You:</strong> ${message_content}</p>`;
+      } else {
+        // Format the message as "sender: message_content" for other users
+        messageDiv.className = 'received-message';
+        messageDiv.innerHTML = `<p><strong>${sender}:</strong> ${message_content}</p>`;
+      }
+
+      // Append the message div to the chat interface
+      chatOutput.appendChild(messageDiv);
+    }
+  }
+}
+
+  
+  // Function to load previous messages and display them in ascending time order
+  async function loadAndDisplayMessages(username) {
+      chatOutput.innerHTML = ''; // Clear existing messages
+    // Get the current user's name
+  const senderName = "{{.name}}";
+  // Fetch messages for the specified group from the server
+  const response = await fetch(`/load-messages?sender=${senderName}&receiver=${username}`);
+  console.log("load and display");
+  console.log(response);
+  if (response.ok) {
+  
+   // Parse the JSON response body to obtain message data
+  const responseBody = await response.json();
+  
+  // Filter out server messages and sort messages by sent time in ascending order
+  const userMessages = responseBody.filter(message => message.sender !== 'Server');
+  const sortedMessages = userMessages.sort((a, b) => new Date(a.sent_time) - new Date(b.sent_time));
+  
+  // Get the current user's name
+  const currentUser = "{{.name}}";
+  
+  // Iterate through each sorted message and display them
+  for (const message of sortedMessages) {
+  // Process and display each message
+  const { sender, message_content } = message;
+  
+  // Create a message div
+  const messageDiv = document.createElement('div');
+  
+  // Determine if the message is sent by the current user or another user
+  if (sender === currentUser) {
+  // Format the message as "You: message_content" for the sender
+  messageDiv.className = 'sent-message';
+  messageDiv.innerHTML = `<p><strong>You:</strong> ${message_content}</p>`;
+  } else {
+  // Format the message as "sender: message_content" for other users
+  messageDiv.className = 'received-message';
+  messageDiv.innerHTML = `<p><strong>${sender}:</strong> ${message_content}</p>`;
+  }
+  
+  console.log(messageDiv);
+  // Append the message div to our chat interface
+  chatOutput.appendChild(messageDiv);
+  }
+  }
+  }
+
+  // function to handle incoming messages from websocket
+  function handleIncomingMessage(event) {
+  // extracts the message data from event object
+  const message = event.data;
+  // extracts sender and messagecontent from message
+  const { senderName, messageContent } = extractSenderAndMessage(message);
+    // Create a message div
+  const messageDiv = document.createElement('div');
+  messageDiv.className = senderName === 'You' ? 'sent' : 'received';
+  
+  if (senderName === 'You') {
+  // Display sender's own message as "You: messageContent"
+  messageDiv.innerHTML = `<p><strong>You:</strong> ${messageContent}</p>`;
+  } else {
+  // Display other users' messages as "senderName: messageContent"
+  messageDiv.innerHTML = `<p><strong>${senderName}:</strong> ${messageContent}</p>`;
+  }
+   // Append the message div to our chat interface
+  chatOutput.appendChild(messageDiv);
+  }
+  
+  
+  
+  
+  socket.addEventListener('message', handleIncomingMessage);
+  
+  
+  
+  // Get DOM elements
+  const chatOutput = document.getElementById('chat-output-window');
+  const messageInput = document.getElementById('message-input-window');
+  const sendButton = document.getElementById('send-button-window');
+  const chatRecipient = document.getElementById('chat-recipient'); 
+  
+  // Event handler for when the WebSocket connection is opened
+  socket.addEventListener('open', (event) => {
+  // chatOutput.innerHTML += '<p>Connected to the server.</p>';
+  });
+  
+  // Event handler for sending a message when the "Send" button is clicked
+  sendButton.addEventListener('click', () => {
+  sendMessage();
+  });
+  
+  // Event handler for sending a message when the Enter key is pressed
+  messageInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+  sendMessage();
+  }
+  });
+  
+  // Function to show the chat window for a user
+  function showChatWindow(username) {
+  chatRecipient.textContent = username; // Update the chat recipient's name
+  const chatWindow = document.getElementById('chat-window');
+  chatWindow.classList.add('active'); // Add the 'active' class to show the chat window
+  }
+  
+  // Function to hide the chat window
+  function hideChatWindow() {
+  const chatWindow = document.getElementById('chat-window');
+  chatWindow.classList.remove('active'); // Remove the 'active' class to hide the chat window
+  }
+  
+  // When a user selects another user to chat with or unchecks a user, send a request to the server to load previous messages and handle the chat window.
+  document.querySelector('.user-list-container ul').addEventListener('click', async (event) => {
+    if (event.target.tagName === 'INPUT' && event.target.value !== 'Broadcast') {
+      const username = event.target.value;
+      const chatWindow = document.getElementById('chat-window');
+      chatRecipient.textContent = username; // Update the chat recipient's name
+  
+      // Send a request to the server to load previous messages
+      const senderName = "{{.name}}";
+      const response = await fetch(`/load-messages?sender=${senderName}&receiver=${username}`);
+      console.log("Document Query");
+      console.log(response);
+  
+      if (event.target.checked) {
+        // If the user is checked, show the chat window
+        chatWindow.classList.add('active');
+        await loadAndDisplayMessages(username);
+      } else {
+        // If the user is unchecked, close the chat window
+        chatWindow.classList.remove('active');
+      }
+    }
+  });
+
+// Add a click event listener to the ul element inside '.group-list-container'
+document.querySelector('.group-list-container ul').addEventListener('click', async (event) => {
+  // Check if the clicked element is an INPUT and not the 'Broadcast' option
+  if (event.target.tagName === 'INPUT' && event.target.value !== 'Broadcast') {
+    // Extract the selected username from the clicked INPUT element
+    const username = event.target.value;
+    console.log(username);
+
+    // Get a reference to the chat window
+    const chatWindow = document.getElementById('chat-window');
+    console.log(chatWindow);
+
+    // Update the displayed chat recipient's name
+    chatRecipient.textContent = username;
+
+    // Set the selected username as the current recipient in a hidden input field
+    document.getElementById('current-recipient').value = username;
+
+    // Check if the clicked INPUT element is checked
+    if (event.target.checked) {
+      console.log("Target checked");
+
+      // Show the chat window and update the chat recipient's name
+      chatRecipient.textContent = username;
+      console.log(chatRecipient.textContent);
+      chatWindow.classList.add('active');
+
+      // Load and display group messages for the selected username
+      await loadAndDisplayGroupMessages(username);
+    } else {
+      // If the user is unchecked, close the chat window by removing the 'active' class
+      chatWindow.classList.remove('active');
+    }
+  }
+});
+
+  // Define a variable to keep track of the currently checked user
+  let currentCheckedUser = null;
+ // Add a click event listener to the ul element inside '.user-list-container'
+document.querySelector('.user-list-container ul').addEventListener('click', async (event) => {
+  // Check if the clicked element is an INPUT and not the 'Broadcast' option
+  if (event.target.tagName === 'INPUT' && event.target.value !== 'Broadcast') {
+    // Extract the selected username from the clicked INPUT element
+    const username = event.target.value;
+
+    // Check if the clicked INPUT element is checked
+    if (event.target.checked) {
+      // Uncheck the previously checked user (if any)
+      if (currentCheckedUser) {
+        const previousCheckedUserInput = document.querySelector(`input[value="${currentCheckedUser}"]`);
+        if (previousCheckedUserInput) {
+          previousCheckedUserInput.checked = false;
+        }
+      }
+
+      // Update the currentCheckedUser variable with the selected username
+      currentCheckedUser = username;
+
+      // Set the selected username as the current recipient in a hidden input field
+      document.getElementById('current-recipient').value = username;
+
+      // Hide chat windows for unchecked users except the selected user
+      hideChatWindowsExcept(username);
+
+      // Show the chat window for the selected user and load their messages
+      showChatWindow(username);
+      await loadAndDisplayMessages(username);
+    } else {
+      // If a user is unchecked, update the currentCheckedUser variable to null
+      currentCheckedUser = null;
+
+      // Hide the chat window for the unchecked user
+      hideChatWindow(username);
+    }
+  }
+});
+
+  
+  
+  
+  
+  // Function to hide chat windows for unchecked users
+  function hideChatWindowsExcept(usernameToShow) {
+    const chatWindows = document.querySelectorAll('.chat-window');
+    for (const chatWindow of chatWindows) {
+      if (chatWindow.id === `chat-window-${usernameToShow}`) {
+        chatWindow.classList.add('active');
+      } else {
+        chatWindow.classList.remove('active');
+      }
+    }
+  }
+  
+  // Function to hide a specific chat window
+  function hideChatWindow(usernameToHide) {
+    const chatWindow = document.getElementById(`chat-window-${usernameToHide}`);
+    if (chatWindow) {
+      chatWindow.classList.remove('active');
+    }
+  }
+  
+  
+  // function to close chat window by removing the active class(if opened)
+  function closeChatWindow() {
+    const chatWindow = document.getElementById('chat-window');
+    chatWindow.classList.remove('active'); // Remove the 'active' class to hide the chat window
+  }
+  
+  
+  
+  
+  
+  
+
+  
+  // Function to remove the sender's name (enclosed in square brackets) from a message
+  function removeSenderName(message) {
+  return message.replace(/\[(.*?)\]/, '').trim();
+  }
+  
+  // Event handler for when the WebSocket connection is closed
+  socket.addEventListener('close', (event) => {
+  chatOutput.innerHTML += '<p>Disconnected from Server.</p>';
+  });
+  
+
+  
+  // Function to check if the current recipient is in a group
+  function isInGroup(participant) {
+    
+    console.log("Hmm");
+  
+    return groupNames.includes(participant);
+  }
+  
+  // Function to show the chat window for a user or group
+  function showChatWindow(groupName) {
+    const chatWindow = document.getElementById(`chat-window-${groupName}`);
+    if (chatWindow) {
+      chatWindow.classList.add('active'); // Add the 'active' class to show the chat window
+    }
+  }
+  
+  // Function to hide the chat window for a user or group
+  function hideChatWindow(groupName) {
+    const chatWindow = document.getElementById(`chat-window-${groupName}`);
+    if (chatWindow) {
+      chatWindow.classList.remove('active'); // Remove the 'active' class to hide the chat window
+    }
+  }
+  
+
+  async function loadAndDisplayGroups() {
+    const userName = "{{.name}}";
+    const response = await fetch(`/fetch-group-list?user=${userName}`);
+    
+    if (response.ok) {
+      // const responseData = await response.json();
+      //     console.log(responseData);
+      try {
+        const group_list_view = await response.json();
+        console.log(group_list_view);
+        const groupList = document.getElementById('group-list');
+        
+        // Clear existing group list items
+        groupList.innerHTML = '';
+  
+        // Iterate through each group and create list items
+        group_list_view.groups.forEach((group) => {
+          const listItem = document.createElement('li');
+          listItem.innerHTML = `
+            <label>
+              <input type="checkbox" name="participants" value="Group:${group}" data-is-group="true"> ${group}
+            </label>
+          `;
+  
+          // Add a click event listener to open the chat window when a group is checked
+          listItem.querySelector('input[type="checkbox"]').addEventListener('click', (event) => {
+            const groupName = event.target.value;
+            const isGroup = event.target.dataset.isGroup === 'true';
+            
+            if (event.target.checked) {
+              if (isGroup) {
+                // Handle opening the group chat window (similar to user chat window)
+                showChatWindow(groupName);
+              }
+            } else {
+              // Handle closing the chat window when unchecked
+              hideChatWindow(groupName);
+            }
+          });
+  
+          groupList.appendChild(listItem);
+        });
+      } catch (error) {
+        console.error("Error parsing JSON response:", error);
+      }
+    } else {
+      console.error("Error fetching group list:", response.status, response.statusText);
+    }
+  }
+  
+  
+  // Call the loadAndDisplayGroups function to load and display groups
+  loadAndDisplayGroups();
+  
+  
+  // Event handler for sending a message
+  function sendMessage() {
+    const message = messageInput.value;
+    const currentRecipient = document.getElementById('current-recipient').value;
+    console.log(message);
+    console.log(currentRecipient);
+  
+    if (!currentRecipient) {
+      alert('Please select a recipient.');
+      return;
+    }
+  
+    console.log(currentRecipient);
+    console.log("Current Recipient");
+    console.log(message);
+    const isGroup = currentRecipient.startsWith('Group:'); // Check if the recipient is a group
+  
+    if (isGroup) {
+      // Send the message to a group
+      console.log("Is Group");
+      const groupName = currentRecipient.substr(6); // Remove 'Group:' prefix
+      const formattedMessage = `selectedUsers:${groupName};${message};${isGroup}`;
+      socket.send(formattedMessage);
+      const { senderName } = extractSenderAndMessage(formattedMessage);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = senderName === 'You' ? 'sent' : 'received';
+  
+    messageDiv.innerHTML = `<p><strong>${senderName}:</strong> ${message}</p>`;
+    chatOutput.appendChild(messageDiv);
+  
+    messageInput.value = ''; // Clear the input field
+    } else {
+      // Send the message to an individual user
+      console.log("Not Group");
+      const formattedMessage = `selectedUsers:${currentRecipient};${message};${isGroup}`;
+      socket.send(formattedMessage);
+      const { senderName } = extractSenderAndMessage(formattedMessage);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = senderName === 'You' ? 'sent' : 'received';
+  
+    messageDiv.innerHTML = `<p><strong>${senderName}:</strong> ${message}</p>`;
+    chatOutput.appendChild(messageDiv);
+  
+    messageInput.value = ''; // Clear the input field
+    }
+  
+    
+  }
+  
+  // Function to get the list of selected users
+  function getSelectedUsers() {
+  const checkboxes = document.querySelectorAll('input[name="participants"]:checked');
+  const selectedUsers = Array.from(checkboxes).map(checkbox => checkbox.value);
+  return selectedUsers;
+  }
+  
+  
+  
+  </script>
+  </html>  

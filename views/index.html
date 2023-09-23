@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>Chat App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        #suggestion {
+            width: inherit;
+            height: inherit;
+            position: absolute;
+            z-index: 2;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            font-size: 25px;
+            color: #868686;
+        }
+
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        #suggestion-box {
+            position: relative;
+        }
+
+        .suggestion-item {
+            padding: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            margin-top: 2px;
+        }
+
+        .suggestion-item:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Chat App</h1>
+    <form action="/" method="POST">
+        <label for="name">Enter your name:</label>
+        <input type="text" id="name" name="name" required autocomplete="off">
+
+        <div id="suggestion-box"></div>
+        <br>
+        <input type="submit" value="Start Chat">
+    </form>
+
+    <script>
+        const nameInput = document.getElementById('name');
+        const suggestionBox = document.getElementById('suggestion-box');
+
+        nameInput.addEventListener('input', () => {
+            const name = nameInput.value.trim();
+            if (name === '') {
+                suggestionBox.innerHTML = ''; // Clear the suggestion box
+                return;
+            }
+            
+            // Fetch autocomplete suggestions from the server
+            fetch(`/suggestions?name=${name}`)
+                .then(response => response.json())
+                .then(data => {
+                    const suggestions = data.suggestions;
+                    suggestionBox.innerHTML = ''; // Clear previous suggestions
+                    
+                    suggestions.forEach(suggestion => {
+                        const suggestionDiv = document.createElement('div');
+                        suggestionDiv.textContent = suggestion;
+                        suggestionDiv.classList.add('suggestion-item');
+                        suggestionDiv.addEventListener('click', () => {
+                            nameInput.value = suggestion;
+                            suggestionBox.innerHTML = '';
+                        });
+                        suggestionBox.appendChild(suggestionDiv);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching suggestions:', error);
+                });
+        });
+
+        // Handle Enter key press to select the first suggestion
+        nameInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                const firstSuggestion = suggestionBox.querySelector('.suggestion-item');
+                if (firstSuggestion) {
+                    nameInput.value = firstSuggestion.textContent;
+                    suggestionBox.innerHTML = '';
+                    event.preventDefault();
+                }
+            }
+        });
+
+        // Hide the suggestion box when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!nameInput.contains(event.target) && !suggestionBox.contains(event.target)) {
+                suggestionBox.innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
